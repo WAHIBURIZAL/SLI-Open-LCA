@@ -1,6 +1,7 @@
 .codex_deps/
+.git/
 __pycache__/
 *.pyc
-db.sqlite3-journal
 db.sqlite3
-staticfiles/
+db.sqlite3-journal
+.env

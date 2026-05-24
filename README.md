@@ -33,3 +33,22 @@ python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
+
+## Deploy ke Vercel
+
+Project sudah menyertakan `vercel.json`, `runtime.txt`, dan `.vercelignore`.
+
+Langkah deploy:
+
+```powershell
+vercel
+```
+
+Untuk production, isi environment variable berikut di dashboard Vercel:
+
+```text
+DJANGO_SECRET_KEY=isi-secret-key-sendiri
+DJANGO_DEBUG=False
+```
+
+Catatan: Vercel memakai serverless function, sehingga SQLite hanya cocok untuk demo. Aplikasi ini otomatis membuat database SQLite sementara di `/tmp/db.sqlite3` saat cold start agar halaman tidak error. Data input di Vercel dapat hilang saat instance berganti. Untuk data permanen, gunakan database eksternal seperti PostgreSQL.
