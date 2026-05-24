@@ -1,0 +1,355 @@
+{% extends "lca/base.html" %}
+{% block content %}
+
+<section class="hero hero-analitik">
+  <div>
+    <p class="eyebrow">OpenLCA mini - single inventory model</p>
+    <h1>{{ profil.nama_umkm }}</h1>
+    <p>{{ profil.batas_sistem }}</p>
+  </div>
+  <div class="hero-actions">
+    <a class="button ghost" href="{% url 'database_lca' %}">Edit Database</a>
+    <a class="button ghost" href="#lci">Lihat LCI</a>
+  </div>
+</section>
+
+<section class="metrics metrics-six">
+  <article>
+    <span>Total Emisi</span>
+    <strong>{{ hasil.total_emisi }}</strong>
+    <p>kg CO2e</p>
+  </article>
+  <article>
+    <span>Intensitas Produk</span>
+    <strong>{{ hasil.intensitas }}</strong>
+    <p>kg CO2e/{{ profil.satuan_produk }}</p>
+  </article>
+  <article>
+    <span>Total Produk</span>
+    <strong>{{ hasil.total_produk }}</strong>
+    <p>{{ profil.satuan_produk }} {{ profil.produk_acuan }}</p>
+  </article>
+  <article>
+    <span>Total Inventory</span>
+    <strong>{{ hasil.total_inventory }}</strong>
+    <p>{{ faktor.satuan_inventory }} {{ faktor.nama_inventory }}</p>
+  </article>
+  <article>
+    <span>Inventory/Produk</span>
+    <strong>{{ hasil.inventory_per_produk }}</strong>
+    <p>{{ faktor.satuan_inventory }}/{{ profil.satuan_produk }}</p>
+  </article>
+  <article>
+    <span>Yield Produksi</span>
+    <strong>{{ hasil.yield_produksi }}%</strong>
+    <p>produk layak dari bahan baku</p>
+  </article>
+  <article>
+    <span>Reject Rate</span>
+    <strong>{{ hasil.reject_rate }}%</strong>
+    <p>produk tidak layak jual</p>
+  </article>
+  <article>
+    <span>Produktivitas</span>
+    <strong>{{ hasil.produktivitas }}</strong>
+    <p>{{ profil.satuan_produk }}/jam produksi</p>
+  </article>
+  <article>
+    <span>Biaya/Produk</span>
+    <strong>Rp {{ hasil.biaya_per_produk }}</strong>
+    <p>biaya {{ faktor.nama_inventory }} per {{ profil.satuan_produk }}</p>
+  </article>
+  <article>
+    <span>Status Dampak</span>
+    <strong class="status {{ hasil.kategori_dampak.kelas }}">{{ hasil.kategori_dampak.label }}</strong>
+    <p>{{ hasil.kategori_dampak.rekomendasi }}</p>
+  </article>
+</section>
+
+<section class="analysis-grid">
+  <article class="panel methodology-panel">
+    <p class="eyebrow">Goal & scope</p>
+    <h2>Model LCA</h2>
+    <dl class="scope-list">
+      <div>
+        <dt>Tujuan</dt>
+        <dd>Mengukur dampak emisi dari inventory utama pada produksi UMKM.</dd>
+      </div>
+      <div>
+        <dt>Functional unit</dt>
+        <dd>1 {{ profil.satuan_produk }} {{ profil.produk_acuan }}</dd>
+      </div>
+      <div>
+        <dt>Batas sistem</dt>
+        <dd>Gate-to-gate sederhana untuk pemakaian {{ faktor.nama_inventory }}.</dd>
+      </div>
+      <div>
+        <dt>Kategori dampak</dt>
+        <dd>Global warming potential sederhana, satuan kg CO2e.</dd>
+      </div>
+    </dl>
+  </article>
+
+  <article class="panel benchmark-panel">
+    <p class="eyebrow">Benchmark</p>
+    <h2>Target Intensitas</h2>
+    <div class="gauge" style="--score: {{ hasil.capaian_target }}%;">
+      <div class="gauge-fill"></div>
+      <strong>{{ hasil.capaian_target }}%</strong>
+    </div>
+    <p class="muted">Target contoh: {{ hasil.target_intensitas }} kg CO2e/{{ profil.satuan_produk }}. Semakin dekat ke 100%, semakin baik performanya.</p>
+  </article>
+
+  <article class="panel inventory-card">
+    <p class="eyebrow">Inventory database</p>
+    <h2>{{ faktor.nama_inventory }}</h2>
+    <div class="inventory-factor">{{ faktor.faktor_kg_co2e }} <span>kg CO2e/{{ faktor.satuan_inventory }}</span></div>
+    <p>{{ faktor.kategori_inventory }}</p>
+    <small>{{ faktor.sumber_data }}</small>
+  </article>
+</section>
+
+<section class="grid-main">
+  <article class="panel impact-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">LCIA</p>
+        <h2>Kontribusi Emisi per Batch</h2>
+        <p>Grafik memakai skala relatif terhadap batch dengan emisi tertinggi.</p>
+      </div>
+      <form class="filter" method="get">
+        <input type="date" name="tanggal_awal" value="{{ tanggal_awal }}">
+        <input type="date" name="tanggal_akhir" value="{{ tanggal_akhir }}">
+        <button class="button" type="submit">Filter</button>
+      </form>
+    </div>
+
+    <div class="batch-chart">
+      {% for row in chart_rows %}
+        <div class="batch-row">
+          <div>
+            <strong>{{ row.nama_batch }}</strong>
+            <small>{{ row.tanggal }} | {{ row.jumlah_produk }} {{ profil.satuan_produk }}</small>
+          </div>
+          <div class="bar-track">
+            <div class="bar inventory" style="width: {% widthratio row.skala_emisi 1 1 %}%"></div>
+          </div>
+          <div class="batch-number">
+            <strong>{{ row.emisi_kg_co2e }}</strong>
+            <span>kg CO2e</span>
+          </div>
+        </div>
+      {% empty %}
+        <p class="empty">Belum ada data produksi.</p>
+      {% endfor %}
+    </div>
+  </article>
+
+  <aside class="side-stack">
+    <article class="panel">
+      <p class="eyebrow">Hotspot</p>
+      <h2>Batch Prioritas</h2>
+      {% if hasil.batch_terboros %}
+        <div class="hotspot">
+          <span>Terboros</span>
+          <strong>{{ hasil.batch_terboros.nama_batch }}</strong>
+          <p>{{ hasil.batch_terboros.intensitas }} kg CO2e/{{ profil.satuan_produk }}</p>
+        </div>
+      {% endif %}
+      {% if hasil.batch_terbaik %}
+        <div class="hotspot good">
+          <span>Terbaik</span>
+          <strong>{{ hasil.batch_terbaik.nama_batch }}</strong>
+          <p>{{ hasil.batch_terbaik.intensitas }} kg CO2e/{{ profil.satuan_produk }}</p>
+        </div>
+      {% endif %}
+    </article>
+
+    <article class="panel">
+      <p class="eyebrow">Interpretasi</p>
+      <h2>Rekomendasi</h2>
+      <ul class="insight-list">
+        {% for insight in hasil.interpretasi %}
+          <li>{{ insight }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </aside>
+</section>
+
+<section class="grid-two compact">
+  <article class="panel">
+    <p class="eyebrow">Scenario analysis</p>
+    <h2>Skenario Reduksi Inventory</h2>
+    <div class="scenario-grid">
+      {% for skenario in hasil.skenario %}
+        <div class="scenario">
+          <span>{{ skenario.nama }}</span>
+          <strong>{{ skenario.emisi }}</strong>
+          <p>kg CO2e setelah perbaikan</p>
+          <small>Potensi hemat {{ skenario.penghematan }} kg CO2e</small>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <p class="eyebrow">Data entry</p>
+    <h2>Input Inventory Produksi Detail</h2>
+    <form method="post" class="complex-form">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Identitas batch</legend>
+        <div class="form-grid">
+          <div>
+            <label>Tanggal Produksi</label>
+            <input type="date" name="tanggal_produksi" required>
+          </div>
+          <div>
+            <label>Nama Batch</label>
+            <input type="text" name="nama_batch" placeholder="Contoh: Batch Minggu 1" required>
+          </div>
+          <div>
+            <label>Metode Proses</label>
+            <select name="metode_proses">
+              <option value="penggorengan">Penggorengan</option>
+              <option value="pemanggangan">Pemanggangan</option>
+              <option value="pengeringan">Pengeringan</option>
+              <option value="campuran">Campuran</option>
+            </select>
+          </div>
+          <div>
+            <label>Suhu Proses (C)</label>
+            <input type="number" step="0.01" min="0" name="suhu_proses_c" placeholder="165">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Neraca massa</legend>
+        <div class="form-grid">
+          <div>
+            <label>Bahan Baku Masuk ({{ profil.satuan_produk }})</label>
+            <input type="number" step="0.01" min="0" name="jumlah_bahan_baku" placeholder="Contoh: 80">
+          </div>
+          <div>
+            <label>Produk Layak Jual ({{ profil.satuan_produk }})</label>
+            <input type="number" step="0.01" min="0" name="jumlah_produk" required>
+          </div>
+          <div>
+            <label>Produk Reject/Sisa ({{ profil.satuan_produk }})</label>
+            <input type="number" step="0.01" min="0" name="produk_reject" placeholder="Contoh: 4">
+          </div>
+          <div>
+            <label>Durasi Produksi (jam)</label>
+            <input type="number" step="0.01" min="0" name="durasi_produksi_jam" placeholder="Contoh: 6.5">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Inventory dan biaya</legend>
+        <div class="form-grid">
+          <div>
+            <label>{{ faktor.nama_inventory }} Terpakai ({{ faktor.satuan_inventory }})</label>
+            <input type="number" step="0.01" min="0" name="jumlah_inventory" required>
+          </div>
+          <div>
+            <label>Biaya Inventory (Rp)</label>
+            <input type="number" step="0.01" min="0" name="biaya_inventory" placeholder="Contoh: 324000">
+          </div>
+          <div class="span-2">
+            <label>Pemasok Inventory</label>
+            <input type="text" name="pemasok_inventory" placeholder="Contoh: Agen LPG lokal">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Kualitas data dan catatan</legend>
+        <div class="form-grid">
+          <div>
+            <label>Kualitas Data</label>
+            <select name="kualitas_data">
+              <option value="primer">Data primer</option>
+              <option value="estimasi">Estimasi lapangan</option>
+              <option value="sekunder">Data sekunder</option>
+            </select>
+          </div>
+          <div>
+            <label>Catatan Operasional</label>
+            <input type="text" name="catatan" placeholder="Contoh: Api tidak stabil 20 menit">
+          </div>
+          <div class="span-2">
+            <label>Catatan Perbaikan</label>
+            <textarea name="catatan_perbaikan" rows="3" placeholder="Contoh: Atur kapasitas batch dan pantau suhu minyak"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <button class="button full" type="submit">Hitung dan Simpan</button>
+    </form>
+  </article>
+</section>
+
+<section class="panel" id="lci">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">LCI database</p>
+      <h2>Life Cycle Inventory</h2>
+      <p>Tabel ini menjadi basis perhitungan LCIA dan skenario pengurangan dampak.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Batch</th>
+          <th>Produk</th>
+          <th>Bahan Baku</th>
+          <th>Reject</th>
+          <th>Inventory</th>
+          <th>Emisi</th>
+          <th>Intensitas</th>
+          <th>Yield</th>
+          <th>Biaya/Produk</th>
+          <th>Kualitas</th>
+          <th>Kontribusi</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in hasil.detail_inventory %}
+          <tr>
+            <td>{{ item.tanggal }}</td>
+            <td>
+              <strong>{{ item.nama_batch }}</strong>
+              <small>{{ item.catatan }}</small>
+            </td>
+            <td>{{ item.jumlah_produk }} {{ profil.satuan_produk }}</td>
+            <td>{{ item.jumlah_bahan_baku }} {{ profil.satuan_produk }}</td>
+            <td>{{ item.produk_reject }} {{ profil.satuan_produk }}<small>{{ item.reject_rate }}%</small></td>
+            <td>{{ item.jumlah_inventory }} {{ item.satuan_inventory }}</td>
+            <td>{{ item.emisi_kg_co2e }} kg CO2e</td>
+            <td>{{ item.intensitas }}</td>
+            <td>{{ item.yield_produksi }}%</td>
+            <td>Rp {{ item.biaya_per_produk }}</td>
+            <td>{{ item.kualitas_data }}</td>
+            <td>{{ item.kontribusi }}%</td>
+            <td>
+              <form method="post" action="{% url 'hapus_aktivitas' item.id %}">
+                {% csrf_token %}
+                <button class="button danger" type="submit">Hapus</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="12" class="empty">Belum ada aktivitas produksi.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}

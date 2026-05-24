@@ -1,0 +1,64 @@
+{% extends "lca/base.html" %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">Database Django</p>
+    <h1>Database Inventory UMKM</h1>
+    <p>Data dibuat spesifik untuk satu inventory agar alur perhitungan LCA mudah dipahami.</p>
+  </div>
+  <a class="button ghost" href="{% url 'dashboard_lca' %}">Kembali</a>
+</section>
+
+<form method="post" class="grid-two">
+  {% csrf_token %}
+  <article class="panel">
+    <h2>Profil Studi Kasus</h2>
+    <div class="form-stack">
+      <label>Nama UMKM</label>
+      <input type="text" name="nama_umkm" value="{{ profil.nama_umkm }}" required>
+
+      <label>Jenis Usaha</label>
+      <input type="text" name="jenis_usaha" value="{{ profil.jenis_usaha }}" required>
+
+      <label>Lokasi</label>
+      <input type="text" name="lokasi_usaha" value="{{ profil.lokasi_usaha }}" required>
+
+      <label>Produk Acuan</label>
+      <input type="text" name="produk_acuan" value="{{ profil.produk_acuan }}" required>
+
+      <label>Satuan Produk</label>
+      <input type="text" name="satuan_produk" value="{{ profil.satuan_produk }}" required>
+
+      <label>Batas Sistem</label>
+      <textarea name="batas_sistem" rows="5">{{ profil.batas_sistem }}</textarea>
+    </div>
+  </article>
+
+  <article class="panel">
+    <h2>Faktor Emisi Inventory</h2>
+    <div class="form-stack">
+      <label>Nama Inventory</label>
+      <input type="text" name="nama_inventory" value="{{ faktor.nama_inventory }}" required>
+
+      <label>Kategori Inventory</label>
+      <input type="text" name="kategori_inventory" value="{{ faktor.kategori_inventory }}" required>
+
+      <label>Satuan Inventory</label>
+      <input type="text" name="satuan_inventory" value="{{ faktor.satuan_inventory }}" required>
+
+      <label>Faktor kg CO2e per Satuan</label>
+      <input type="number" step="0.0001" min="0" name="faktor_kg_co2e" value="{{ faktor.faktor_kg_co2e }}" required>
+
+      <label>Sumber Data</label>
+      <input type="text" name="sumber_data" value="{{ faktor.sumber_data }}" required>
+
+      <label>Keterangan</label>
+      <textarea name="keterangan" rows="5">{{ faktor.keterangan }}</textarea>
+
+      <button class="button full" type="submit">Simpan Database LCA</button>
+    </div>
+  </article>
+</form>
+
+{% endblock %}
