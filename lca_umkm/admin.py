@@ -18,7 +18,6 @@ class AktivitasProduksiAdmin(admin.ModelAdmin):
     list_display = (
         "tanggal_produksi",
         "nama_batch",
-        "metode_proses",
         "jumlah_produk",
         "jumlah_bahan_baku",
         "produk_reject",
@@ -26,5 +25,5 @@ class AktivitasProduksiAdmin(admin.ModelAdmin):
         "emisi_kg_co2e",
         "kualitas_data",
     )
-    list_filter = ("tanggal_produksi", "faktor_inventory", "metode_proses", "kualitas_data")
+    list_filter = ("tanggal_produksi", "faktor_inventory", "kualitas_data")
     search_fields = ("nama_batch", "catatan")

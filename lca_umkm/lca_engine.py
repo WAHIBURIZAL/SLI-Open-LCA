@@ -22,7 +22,7 @@ def hitung_dampak_lca(aktivitas_queryset):
     intensitas = Decimal("0") if total_produk == 0 else total_emisi / total_produk
     target_intensitas = Decimal("1.00")
     inventory_per_produk = Decimal("0") if total_produk == 0 else total_inventory / total_produk
-    yield_produksi = Decimal("0") if total_bahan_baku == 0 else (total_produk / total_bahan_baku) * Decimal("100")
+    yield_produksi = Decimal("0") if total_bahan_baku == 0 else total_produk / total_bahan_baku
     reject_rate = Decimal("0") if (total_produk + total_reject) == 0 else (total_reject / (total_produk + total_reject)) * Decimal("100")
     produktivitas = Decimal("0") if total_durasi == 0 else total_produk / total_durasi
     biaya_per_produk = Decimal("0") if total_produk == 0 else total_biaya_inventory / total_produk
@@ -40,6 +40,8 @@ def hitung_dampak_lca(aktivitas_queryset):
             "jumlah_produk": bulatkan(item.jumlah_produk),
             "jumlah_bahan_baku": bulatkan(item.jumlah_bahan_baku),
             "produk_reject": bulatkan(item.produk_reject),
+            "jumlah_unit_inventory": bulatkan(item.jumlah_unit_inventory),
+            "berat_per_unit_inventory_kg": bulatkan(item.berat_per_unit_inventory_kg, 4),
             "jumlah_inventory": bulatkan(item.jumlah_inventory),
             "satuan_inventory": item.faktor_inventory.satuan_inventory,
             "emisi_kg_co2e": bulatkan(emisi),
@@ -50,10 +52,8 @@ def hitung_dampak_lca(aktivitas_queryset):
             "durasi": bulatkan(item.durasi_produksi_jam),
             "biaya_inventory": bulatkan(item.biaya_inventory),
             "biaya_per_produk": bulatkan(item.biaya_inventory_per_produk),
-            "metode_proses": item.get_metode_proses_display(),
             "kualitas_data": item.get_kualitas_data_display(),
             "pemasok_inventory": item.pemasok_inventory,
-            "suhu_proses_c": bulatkan(item.suhu_proses_c),
             "catatan_perbaikan": item.catatan_perbaikan,
             "kontribusi": bulatkan(kontribusi, 1),
             "skala_emisi": bulatkan(skala_emisi, 1),

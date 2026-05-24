@@ -40,9 +40,9 @@
     <p>{{ faktor.satuan_inventory }}/{{ profil.satuan_produk }}</p>
   </article>
   <article>
-    <span>Yield Produksi</span>
-    <strong>{{ hasil.yield_produksi }}%</strong>
-    <p>produk layak dari bahan baku</p>
+    <span>Rasio Produk/Kelapa</span>
+    <strong>{{ hasil.yield_produksi }}</strong>
+    <p>porsi per kg kelapa</p>
   </article>
   <article>
     <span>Reject Rate</span>
@@ -81,7 +81,7 @@
       </div>
       <div>
         <dt>Batas sistem</dt>
-        <dd>Gate-to-gate sederhana untuk pemakaian {{ faktor.nama_inventory }}.</dd>
+        <dd>Cradle-to-gate sederhana untuk pengadaan dan pemakaian {{ faktor.nama_inventory }}.</dd>
       </div>
       <div>
         <dt>Kategori dampak</dt>
@@ -97,7 +97,7 @@
       <div class="gauge-fill"></div>
       <strong>{{ hasil.capaian_target }}%</strong>
     </div>
-    <p class="muted">Target contoh: {{ hasil.target_intensitas }} kg CO2e/{{ profil.satuan_produk }}. Semakin dekat ke 100%, semakin baik performanya.</p>
+    <p class="muted">Target contoh internal: {{ hasil.target_intensitas }} kg CO2e/{{ profil.satuan_produk }}. Semakin dekat ke 100%, semakin baik performanya.</p>
   </article>
 
   <article class="panel inventory-card">
@@ -209,19 +209,6 @@
             <label>Nama Batch</label>
             <input type="text" name="nama_batch" placeholder="Contoh: Batch Minggu 1" required>
           </div>
-          <div>
-            <label>Metode Proses</label>
-            <select name="metode_proses">
-              <option value="penggorengan">Penggorengan</option>
-              <option value="pemanggangan">Pemanggangan</option>
-              <option value="pengeringan">Pengeringan</option>
-              <option value="campuran">Campuran</option>
-            </select>
-          </div>
-          <div>
-            <label>Suhu Proses (C)</label>
-            <input type="number" step="0.01" min="0" name="suhu_proses_c" placeholder="165">
-          </div>
         </div>
       </fieldset>
 
@@ -229,16 +216,16 @@
         <legend>Neraca massa</legend>
         <div class="form-grid">
           <div>
-            <label>Bahan Baku Masuk ({{ profil.satuan_produk }})</label>
-            <input type="number" step="0.01" min="0" name="jumlah_bahan_baku" placeholder="Contoh: 80">
+            <label>Kelapa Masuk (kg)</label>
+            <input type="number" step="0.01" min="0" name="jumlah_bahan_baku" placeholder="Contoh: 200">
           </div>
           <div>
             <label>Produk Layak Jual ({{ profil.satuan_produk }})</label>
             <input type="number" step="0.01" min="0" name="jumlah_produk" required>
           </div>
           <div>
-            <label>Produk Reject/Sisa ({{ profil.satuan_produk }})</label>
-            <input type="number" step="0.01" min="0" name="produk_reject" placeholder="Contoh: 4">
+            <label>Gelas Rusak/Defect (unit)</label>
+            <input type="number" step="0.01" min="0" name="produk_reject" placeholder="Contoh: 10">
           </div>
           <div>
             <label>Durasi Produksi (jam)</label>
@@ -251,16 +238,24 @@
         <legend>Inventory dan biaya</legend>
         <div class="form-grid">
           <div>
-            <label>{{ faktor.nama_inventory }} Terpakai ({{ faktor.satuan_inventory }})</label>
-            <input type="number" step="0.01" min="0" name="jumlah_inventory" required>
+            <label>Jumlah Gelas Plastik (unit)</label>
+            <input type="number" step="0.01" min="0" name="jumlah_unit_inventory" placeholder="Contoh: 1000">
           </div>
           <div>
-            <label>Biaya Inventory (Rp)</label>
-            <input type="number" step="0.01" min="0" name="biaya_inventory" placeholder="Contoh: 324000">
+            <label>Berat per Gelas (kg/unit)</label>
+            <input type="number" step="0.0001" min="0" name="berat_per_unit_inventory_kg" value="0.0100">
+          </div>
+          <div>
+            <label>Total Berat Plastik (kg)</label>
+            <input type="number" step="0.01" min="0" name="jumlah_inventory" placeholder="Terisi manual jika tidak pakai unit">
+          </div>
+          <div>
+            <label>Biaya Gelas Plastik (Rp)</label>
+            <input type="number" step="0.01" min="0" name="biaya_inventory" placeholder="Contoh: 350000">
           </div>
           <div class="span-2">
-            <label>Pemasok Inventory</label>
-            <input type="text" name="pemasok_inventory" placeholder="Contoh: Agen LPG lokal">
+            <label>Pemasok Kemasan</label>
+            <input type="text" name="pemasok_inventory" placeholder="Contoh: Toko kemasan Malang">
           </div>
         </div>
       </fieldset>
@@ -282,7 +277,7 @@
           </div>
           <div class="span-2">
             <label>Catatan Perbaikan</label>
-            <textarea name="catatan_perbaikan" rows="3" placeholder="Contoh: Atur kapasitas batch dan pantau suhu minyak"></textarea>
+            <textarea name="catatan_perbaikan" rows="3" placeholder="Contoh: Kurangi gelas plastik sekali pakai atau coba cup biodegradable"></textarea>
           </div>
         </div>
       </fieldset>
@@ -309,10 +304,11 @@
           <th>Produk</th>
           <th>Bahan Baku</th>
           <th>Reject</th>
-          <th>Inventory</th>
+          <th>Unit Inventory</th>
+          <th>Berat Inventory</th>
           <th>Emisi</th>
           <th>Intensitas</th>
-          <th>Yield</th>
+          <th>Produk/Kelapa</th>
           <th>Biaya/Produk</th>
           <th>Kualitas</th>
           <th>Kontribusi</th>
@@ -330,10 +326,11 @@
             <td>{{ item.jumlah_produk }} {{ profil.satuan_produk }}</td>
             <td>{{ item.jumlah_bahan_baku }} {{ profil.satuan_produk }}</td>
             <td>{{ item.produk_reject }} {{ profil.satuan_produk }}<small>{{ item.reject_rate }}%</small></td>
+            <td>{{ item.jumlah_unit_inventory }} unit<small>{{ item.berat_per_unit_inventory_kg }} kg/unit</small></td>
             <td>{{ item.jumlah_inventory }} {{ item.satuan_inventory }}</td>
             <td>{{ item.emisi_kg_co2e }} kg CO2e</td>
             <td>{{ item.intensitas }}</td>
-            <td>{{ item.yield_produksi }}%</td>
+            <td>{{ item.yield_produksi }} porsi/kg</td>
             <td>Rp {{ item.biaya_per_produk }}</td>
             <td>{{ item.kualitas_data }}</td>
             <td>{{ item.kontribusi }}%</td>
@@ -345,7 +342,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="12" class="empty">Belum ada aktivitas produksi.</td></tr>
+          <tr><td colspan="13" class="empty">Belum ada aktivitas produksi.</td></tr>
         {% endfor %}
       </tbody>
     </table>

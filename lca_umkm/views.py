@@ -13,14 +13,39 @@ def ambil_database_awal():
     profil, _ = models.ProfilUMKM.objects.get_or_create(id=1)
     faktor, _ = models.FaktorEmisiInventory.objects.get_or_create(id=1)
 
+    if profil.nama_umkm != "Es Degan Mak DEG":
+        profil.nama_umkm = "Es Degan Mak DEG"
+        profil.jenis_usaha = "UMKM minuman es kelapa muda"
+        profil.lokasi_usaha = "Jl. Terusan Bendungan Sigura-gura, Malang"
+        profil.produk_acuan = "Es degan 500 ml"
+        profil.satuan_produk = "porsi"
+        profil.batas_sistem = (
+            "Batas sistem cradle-to-gate sederhana: pengadaan gelas plastik PP "
+            "sampai produk es degan 500 ml siap disajikan kepada konsumen."
+        )
+        profil.save()
+
+    if faktor.nama_inventory != "Gelas plastik PP sekali pakai":
+        faktor.nama_inventory = "Gelas plastik PP sekali pakai"
+        faktor.kategori_inventory = "Kemasan plastik"
+        faktor.satuan_inventory = "kg"
+        faktor.faktor_kg_co2e = Decimal("3.6310")
+        faktor.sumber_data = "Estimasi LCA SLI Kelompok 3 dari hotspot kemasan plastik"
+        faktor.keterangan = (
+            "Faktor emisi disederhanakan dari kontribusi kemasan plastik pada analisis "
+            "GWP produk es degan. Nilai ini digunakan sebagai database satu inventory."
+        )
+        faktor.save()
+
     if not models.AktivitasProduksi.objects.filter(profil_umkm=profil).exists():
         hari_ini = timezone.localdate()
         data_awal = [
-            ("Batch Senin", Decimal("48.00"), Decimal("80.00"), Decimal("4.00"), Decimal("18.00"), Decimal("6.00"), Decimal("324000"), hari_ini - timedelta(days=14)),
-            ("Batch Rabu", Decimal("55.00"), Decimal("88.00"), Decimal("3.50"), Decimal("19.50"), Decimal("6.50"), Decimal("351000"), hari_ini - timedelta(days=10)),
-            ("Batch Sabtu", Decimal("62.00"), Decimal("96.00"), Decimal("4.20"), Decimal("20.00"), Decimal("7.00"), Decimal("360000"), hari_ini - timedelta(days=7)),
+            ("Operasional 2 Hari A", Decimal("1000.00"), Decimal("200.00"), Decimal("10.00"), Decimal("1000.00"), Decimal("0.0100"), Decimal("16.00"), Decimal("350000"), hari_ini - timedelta(days=14)),
+            ("Operasional 2 Hari B", Decimal("920.00"), Decimal("185.00"), Decimal("12.00"), Decimal("920.00"), Decimal("0.0100"), Decimal("15.00"), Decimal("322000"), hari_ini - timedelta(days=10)),
+            ("Operasional 2 Hari C", Decimal("1080.00"), Decimal("215.00"), Decimal("8.00"), Decimal("1080.00"), Decimal("0.0100"), Decimal("17.00"), Decimal("378000"), hari_ini - timedelta(days=7)),
         ]
-        for nama_batch, jumlah_produk, jumlah_bahan_baku, produk_reject, jumlah_inventory, durasi, biaya, tanggal in data_awal:
+        for nama_batch, jumlah_produk, jumlah_bahan_baku, produk_reject, jumlah_unit, berat_unit, durasi, biaya, tanggal in data_awal:
+            jumlah_inventory = jumlah_unit * berat_unit
             models.AktivitasProduksi.objects.create(
                 profil_umkm=profil,
                 faktor_inventory=faktor,
@@ -29,15 +54,15 @@ def ambil_database_awal():
                 jumlah_produk=jumlah_produk,
                 jumlah_bahan_baku=jumlah_bahan_baku,
                 produk_reject=produk_reject,
+                jumlah_unit_inventory=jumlah_unit,
+                berat_per_unit_inventory_kg=berat_unit,
                 jumlah_inventory=jumlah_inventory,
                 durasi_produksi_jam=durasi,
                 biaya_inventory=biaya,
-                suhu_proses_c=Decimal("165.00"),
-                metode_proses="penggorengan",
-                pemasok_inventory="Agen LPG lokal",
+                pemasok_inventory="Toko kemasan Malang",
                 kualitas_data="primer",
-                catatan_perbaikan="Pantau stabilitas suhu dan kapasitas wajan.",
-                catatan="Data contoh untuk simulasi awal LCA.",
+                catatan_perbaikan="Kurangi gelas plastik sekali pakai atau evaluasi alternatif biodegradable.",
+                catatan="Data contoh berdasarkan konsumsi gelas plastik sekitar 1.000 unit per dua hari.",
             )
 
     return profil, faktor
@@ -57,16 +82,17 @@ def dashboard_lca(request):
         jumlah_produk = ambil_desimal(request.POST.get("jumlah_produk"))
         jumlah_bahan_baku = ambil_desimal(request.POST.get("jumlah_bahan_baku"))
         produk_reject = ambil_desimal(request.POST.get("produk_reject"))
+        jumlah_unit_inventory = ambil_desimal(request.POST.get("jumlah_unit_inventory"))
+        berat_per_unit_inventory_kg = ambil_desimal(request.POST.get("berat_per_unit_inventory_kg"), "0.0100")
         jumlah_inventory = ambil_desimal(request.POST.get("jumlah_inventory"))
         durasi_produksi_jam = ambil_desimal(request.POST.get("durasi_produksi_jam"))
         biaya_inventory = ambil_desimal(request.POST.get("biaya_inventory"))
-        suhu_proses_c = ambil_desimal(request.POST.get("suhu_proses_c"))
+
+        if jumlah_inventory <= 0 and jumlah_unit_inventory > 0 and berat_per_unit_inventory_kg > 0:
+            jumlah_inventory = jumlah_unit_inventory * berat_per_unit_inventory_kg
 
         if jumlah_produk <= 0 or jumlah_inventory <= 0:
-            messages.error(request, "Jumlah produk dan jumlah inventory harus lebih dari 0.")
-            return redirect("dashboard_lca")
-        if jumlah_bahan_baku and jumlah_produk > jumlah_bahan_baku:
-            messages.error(request, "Jumlah produk tidak boleh lebih besar dari bahan baku masuk.")
+            messages.error(request, "Jumlah produk dan total berat inventory harus lebih dari 0.")
             return redirect("dashboard_lca")
         if produk_reject < 0 or durasi_produksi_jam < 0 or biaya_inventory < 0:
             messages.error(request, "Reject, durasi, dan biaya tidak boleh bernilai negatif.")
@@ -80,11 +106,11 @@ def dashboard_lca(request):
             jumlah_produk=jumlah_produk,
             jumlah_bahan_baku=jumlah_bahan_baku,
             produk_reject=produk_reject,
+            jumlah_unit_inventory=jumlah_unit_inventory,
+            berat_per_unit_inventory_kg=berat_per_unit_inventory_kg,
             jumlah_inventory=jumlah_inventory,
             durasi_produksi_jam=durasi_produksi_jam,
             biaya_inventory=biaya_inventory,
-            suhu_proses_c=suhu_proses_c,
-            metode_proses=request.POST.get("metode_proses") or "penggorengan",
             pemasok_inventory=request.POST.get("pemasok_inventory", ""),
             kualitas_data=request.POST.get("kualitas_data") or "primer",
             catatan_perbaikan=request.POST.get("catatan_perbaikan", ""),
